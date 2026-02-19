@@ -1,45 +1,4 @@
-// const express = require("express");
-// const cors = require("cors");
 
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // dummy users (replace with database later)
-// const users = [
-//     { username: "admin", password: "1234" },
-//     { username: "user", password: "abcd" },
-// ];
-
-// // login route
-// app.post("/api/login", (req, res) => {
-//     const { username, password } = req.body;
-
-//     const user = users.find(
-//         (u) => u.username === username && u.password === password
-//     );
-
-//     if (!user) {
-//         return res.json({ success: false, message: "Invalid credentials" });
-//     }
-
-//     return res.json({ success: true, message: "Login successful" });
-// });
-// app.get("/api/logs", (req, res) => {
-//     res.json({
-//         success: true,
-//         data: [
-//             {
-//                 id: 1,
-//                 emp_name: "John Doe",
-//                 entry_time: new Date(),
-//                 attempt: "success",
-//             },
-//         ],
-//     });
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
 const express = require("express");
 const cors = require("cors");
 
