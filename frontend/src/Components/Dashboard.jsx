@@ -5,12 +5,12 @@ export default function Dashboard() {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const { logout } = useAuth();
+    const { logout, url } = useAuth();
 
     // Fetch logs from Node.js backend
     const fetchLogs = async () => {
         try {
-            const response = await fetch("http://localhost:5000/api/logs");
+            const response = await fetch(`${url}/api/logs`);
             const result = await response.json();
 
             if (!result.success) {
