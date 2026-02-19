@@ -13,6 +13,16 @@ try {
   console.log("Firebase not configured, using fallback data:", error.message);
 }
 
+const url ="https://door-lock-system-backend.onrender.com";
+const interval = 300000;
+function reloadWebsite() {
+  axios
+    .get(url)
+    .then(() => console.log("Website pinged to prevent sleep"))
+    .catch((err) => console.log(" Auto-ping error:", err.message));
+}
+setInterval(reloadWebsite, interval);
+
 const app = express();
 app.use(cors());
 app.use(express.json());

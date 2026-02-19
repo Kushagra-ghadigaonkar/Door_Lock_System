@@ -5,7 +5,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
-
+    const [url, seturl] = useState("http://localhost:5000")
     useEffect(() => {
         const authStatus = localStorage.getItem("isAuthenticated");
         if (authStatus === "true") {
@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
 
     const login = async (username, password) => {
         try {
-            const response = await fetch("http://localhost:5000/api/login", {
+            const response = await fetch(`${url}/api/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated, login, logout, loading, url }}>
             {children}
         </AuthContext.Provider>
     );

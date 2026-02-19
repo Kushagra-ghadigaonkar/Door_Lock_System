@@ -1,15 +1,16 @@
 import { useState } from "react";
-
+import { useAuth } from "../Contexts/AuthContext";
 export default function TestPanel() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const {url}=useAuth();
 
   const addTestLog = async () => {
     setLoading(true);
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/test-log", {
+      const response = await fetch(`${url}/api/test-log`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,7 +38,7 @@ export default function TestPanel() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/logs", {
+      const response = await fetch(`${url}/api/logs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +66,7 @@ export default function TestPanel() {
 
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden mt-6">
-      <div className="px-6 py-5 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+      <div className="px-6 py-5 border-b border-slate-200 bg-linear-to-r from-slate-50 to-white">
         <h3 className="text-lg font-bold text-slate-900">Test Panel</h3>
         <p className="text-sm text-slate-600 mt-1">
           Add test data to Firebase (for development)
