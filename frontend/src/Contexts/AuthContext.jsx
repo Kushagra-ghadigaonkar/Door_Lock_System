@@ -5,7 +5,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [url, seturl] = useState("http://localhost:5000")
+    const [url, seturl] = useState("https://door-lock-system-backend.onrender.com")
     useEffect(() => {
         const authStatus = localStorage.getItem("isAuthenticated");
         if (authStatus === "true") {
