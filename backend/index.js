@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios"); // ✅ Added (was missing)
 
 // Try to load Firebase config, but handle errors gracefully
 let db, realtimeDb;
@@ -13,13 +14,14 @@ try {
   console.log("Firebase not configured, using fallback data:", error.message);
 }
 
-const url ="https://door-lock-system-backend.onrender.com";
+const url = "https://door-lock-system-backend.onrender.com";
 const interval = 300000;
+
 function reloadWebsite() {
   axios
     .get(url)
     .then(() => console.log("Website pinged to prevent sleep"))
-    .catch((err) => console.log(" Auto-ping error:", err.message));
+    .catch((err) => console.log("Auto-ping error:", err.message));
 }
 setInterval(reloadWebsite, interval);
 
@@ -27,13 +29,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ----------------------
-//  LOGIN API (Admin Portal)
-// ----------------------
+/* =========================================================
+   LOGIN API
+========================================================= */
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
 
-  // Hardcoded credentials
   if (username === "admin" && password === "admin123") {
     return res.json({
       success: true,
@@ -47,16 +48,20 @@ app.post("/api/login", (req, res) => {
   });
 });
 
-// ----------------------
-//  ACCESS LOGS API
-// ----------------------
+/* =========================================================
+   ACCESS LOGS API (READ)
+========================================================= */
 app.get("/api/logs", async (req, res) => {
   try {
-    // Only try Firebase if it's configured
     if (realtimeDb) {
-      const logsRef = realtimeDb.ref("access_logs");
+      // ❌ OLD (reading from access_logs)
+      // const logsRef = realtimeDb.ref("access_logs");
+
+      // ✅ NEW (reading from rfid_logs)
+      const logsRef = realtimeDb.ref("rfid_logs");
+
       const snapshot = await logsRef
-        .orderByChild("entry_time")
+        .orderByChild("timestamp") // more reliable
         .limitToLast(50)
         .once("value");
 
@@ -74,28 +79,17 @@ app.get("/api/logs", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error fetching logs from Firebase:", error);
+    console.error("Error fetching logs:", error);
   }
 
-  // Fallback to sample data if Firebase is not configured or fails
+  // Fallback sample
   const logs = [
     {
       id: 1,
       emp_name: "John Doe",
-      entry_time: "2026-02-19T10:15:00Z",
+      entry_time: new Date().toISOString(),
       attempt: "success",
-    },
-    {
-      id: 2,
-      emp_name: "Jane Smith",
-      entry_time: "2026-02-19T09:50:00Z",
-      attempt: "failed",
-    },
-    {
-      id: 3,
-      emp_name: "Alex Johnson",
-      entry_time: "2026-02-19T09:30:00Z",
-      attempt: "success",
+      timestamp: Date.now(),
     },
   ];
 
@@ -105,31 +99,49 @@ app.get("/api/logs", async (req, res) => {
   });
 });
 
-// ----------------------
-//  ADD ACCESS LOG API (For IoT device)
-// ----------------------
+/* =========================================================
+   ADD ACCESS LOG API (IoT Device)
+========================================================= */
 app.post("/api/logs", async (req, res) => {
   try {
-    const { emp_name, card_id, attempt } = req.body;
+    const { emp_name, card_id, status, attempt } = req.body;
 
-    if (!emp_name || !attempt) {
+    if (!emp_name) {
       return res.status(400).json({
         success: false,
-        message: "Employee name and attempt status are required",
+        message: "Employee name is required",
       });
     }
 
+    // ❌ OLD STRUCTURE (commented)
+    /*
     const logEntry = {
       emp_name,
       card_id: card_id || null,
       entry_time: new Date().toISOString(),
-      attempt, // "success" or "failed"
+      attempt, 
       timestamp: Date.now(),
     };
+    */
 
-    // Try to add to Firebase if configured
+    // ✅ NEW STANDARDIZED STRUCTURE
+    const normalizedAttempt =
+      status?.toLowerCase() === "denied"
+        ? "failed"
+        : status?.toLowerCase() === "granted"
+        ? "success"
+        : attempt?.toLowerCase() || "failed";
+
+    const logEntry = {
+      emp_name,
+      card_id: card_id || null,
+      entry_time: new Date().toISOString(), // ISO format
+      attempt: normalizedAttempt, // only "success" or "failed"
+      timestamp: Date.now(), // numeric timestamp
+    };
+
     if (realtimeDb) {
-      const logsRef = realtimeDb.ref("access_logs");
+      const logsRef = realtimeDb.ref("rfid_logs"); // keeping rfid_logs
       const newLogRef = await logsRef.push(logEntry);
 
       return res.json({
@@ -142,7 +154,6 @@ app.post("/api/logs", async (req, res) => {
       });
     }
 
-    // If Firebase not configured, just return success (for development)
     res.json({
       success: true,
       message: "Access log recorded successfully (Firebase not configured)",
@@ -160,9 +171,9 @@ app.post("/api/logs", async (req, res) => {
   }
 });
 
-// ----------------------
-//  TEST ENDPOINT - Add sample data
-// ----------------------
+/* =========================================================
+   TEST ENDPOINT
+========================================================= */
 app.post("/api/test-log", async (req, res) => {
   try {
     const sampleLogs = [
@@ -183,7 +194,8 @@ app.post("/api/test-log", async (req, res) => {
       },
     ];
 
-    const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
+    const randomLog =
+      sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
 
     const logEntry = {
       ...randomLog,
@@ -191,9 +203,13 @@ app.post("/api/test-log", async (req, res) => {
       timestamp: Date.now(),
     };
 
-    // Try to add to Firebase if configured
     if (realtimeDb) {
-      const logsRef = realtimeDb.ref("access_logs");
+      // ❌ OLD
+      // const logsRef = realtimeDb.ref("access_logs");
+
+      // ✅ NEW
+      const logsRef = realtimeDb.ref("rfid_logs");
+
       const newLogRef = await logsRef.push(logEntry);
 
       return res.json({
@@ -206,10 +222,9 @@ app.post("/api/test-log", async (req, res) => {
       });
     }
 
-    // If Firebase not configured, just return success
     res.json({
       success: true,
-      message: "Test log added successfully (Firebase not configured)",
+      message: "Test log added successfully",
       data: {
         id: Date.now().toString(),
         ...logEntry,
@@ -224,9 +239,9 @@ app.post("/api/test-log", async (req, res) => {
   }
 });
 
-// ----------------------
-//  START SERVER
-// ----------------------
+/* =========================================================
+   START SERVER
+========================================================= */
 app.listen(5000, () => {
   console.log("Node.js Server running on http://localhost:5000");
 });
