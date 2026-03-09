@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { realtimeDb } from "../firebase-config";
-import { ref, onValue, off } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 
 export const useFirebaseRealtime = (path, limit = 50) => {
   const [data, setData] = useState([]);
@@ -8,65 +8,65 @@ export const useFirebaseRealtime = (path, limit = 50) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        setError(new Error("Firebase connection timeout"));
-        setLoading(false);
-      }
-    }, 5000);
+    let loadingTimeout;
 
     try {
       const dataRef = ref(realtimeDb, path);
 
+      loadingTimeout = setTimeout(() => {
+        setError(new Error("Firebase connection timeout"));
+        setLoading(false);
+      }, 5000);
+
       const unsubscribe = onValue(
         dataRef,
         (snapshot) => {
-          try {
-            clearTimeout(loadingTimeout);
+          clearTimeout(loadingTimeout);
 
-            if (snapshot.exists()) {
-              const firebaseData = snapshot.val();
-              const dataArray = Object.keys(firebaseData).map((key) => ({
-                id: key,
-                ...firebaseData[key],
-              }));
+          if (snapshot.exists()) {
+            const firebaseData = snapshot.val();
 
-              // Sort by timestamp/entry_time (newest first)
-              dataArray.sort((a, b) => {
-                const timeA = new Date(a.entry_time || a.timestamp).getTime();
-                const timeB = new Date(b.entry_time || b.timestamp).getTime();
-                return timeB - timeA;
-              });
+            const dataArray = Object.keys(firebaseData).map((key) => ({
+              id: key,
+              ...firebaseData[key],
+            }));
 
-              setData(dataArray.slice(0, limit));
-            } else {
-              setData([]);
-            }
-            setLoading(false);
-            setError(null);
-          } catch (err) {
-            console.error("Firebase data processing error:", err);
-            setError(err);
-            setLoading(false);
+            // Safe sorting (newest first)
+            dataArray.sort((a, b) => {
+              const timeA =
+                typeof a.timestamp === "number"
+                  ? a.timestamp
+                  : new Date(a.entry_time || 0).getTime();
+
+              const timeB =
+                typeof b.timestamp === "number"
+                  ? b.timestamp
+                  : new Date(b.entry_time || 0).getTime();
+
+              return timeB - timeA;
+            });
+
+            setData(dataArray.slice(0, limit));
+          } else {
+            setData([]);
           }
+
+          setLoading(false);
+          setError(null);
         },
         (err) => {
-          console.error("Firebase connection error:", err);
           clearTimeout(loadingTimeout);
           setError(err);
           setLoading(false);
         }
       );
 
+      // ✅ Proper v9 cleanup
       return () => {
         clearTimeout(loadingTimeout);
-        if (unsubscribe) {
-          off(dataRef, "value", unsubscribe);
-        }
+        unsubscribe();
       };
     } catch (err) {
-      console.error("Firebase initialization error:", err);
       clearTimeout(loadingTimeout);
       setError(err);
       setLoading(false);
