@@ -31,13 +31,6 @@ export default function NotificationSettings() {
       </h2>
 
       <div className="space-y-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-gray-700">
-            Email notifications are configured in the backend .env file. Failed
-            access attempts will trigger automatic security alerts.
-          </p>
-        </div>
-
         <div className="flex gap-3 items-center">
           <button
             onClick={sendTestNotification}
@@ -56,8 +49,8 @@ export default function NotificationSettings() {
 
         <div className="text-xs text-gray-500 space-y-1">
           <p>• Failed attempts trigger automatic emails</p>
-          <p>• Configure EMAIL_USER and EMAIL_PASSWORD in backend/.env</p>
-          <p>• Set ALERT_EMAIL to receive notifications</p>
+
+          <p>• Set Alert email to receive notifications</p>
         </div>
       </div>
     </div>
