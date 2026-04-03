@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const { sendSecurityAlert } = require("./emailService");
+const { startFirebaseListener } = require("./firebase-listener");
 
 // Try to load Firebase config, but handle errors gracefully
 let db, realtimeDb;
@@ -185,7 +186,6 @@ app.post("/api/logs", async (req, res) => {
   }
 });
 
-
 /* =========================================================
    ANALYTICS ENDPOINTS
 ========================================================= */
@@ -269,4 +269,7 @@ app.get("/api/analytics/door-status", async (req, res) => {
 ========================================================= */
 app.listen(5000, () => {
   console.log("Node.js Server running on http://localhost:5000");
+
+  // Start Firebase listener for email notifications
+  startFirebaseListener();
 });
