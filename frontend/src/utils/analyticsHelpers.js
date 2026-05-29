@@ -212,13 +212,33 @@ export const exportToCSV = (logs) => {
 export const getDoorStatus = (logs) => {
   if (logs.length === 0) return { status: "unknown", lastActivity: null };
 
-  const latestLog = logs[0];
-  const timeSinceLastAccess = Date.now() - latestLog.timestamp;
+  // Find the log with the most recent timestamp
+  let latestLog = logs[0];
+  let latestTime = 0;
+
+  logs.forEach((log) => {
+    let logTime = 0;
+
+    if (typeof log.timestamp === "number") {
+      logTime = log.timestamp;
+    } else if (typeof log.timestamp === "string") {
+      logTime = new Date(log.timestamp).getTime() || 0;
+    } else if (log.entry_time) {
+      logTime = new Date(log.entry_time).getTime() || 0;
+    }
+
+    if (logTime > latestTime) {
+      latestTime = logTime;
+      latestLog = log;
+    }
+  });
+
+  const timeSinceLastAccess = Date.now() - latestTime;
   const fiveMinutes = 5 * 60 * 1000;
 
   return {
     status: timeSinceLastAccess < fiveMinutes ? "active" : "locked",
-    lastActivity: latestLog.timestamp,
+    lastActivity: latestTime,
     lastUser: latestLog.emp_name,
   };
 };

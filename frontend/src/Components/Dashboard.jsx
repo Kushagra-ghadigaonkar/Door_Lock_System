@@ -22,23 +22,11 @@ export default function Dashboard() {
 
   // ---------------- APPLY FILTERS ----------------
   const applyFilters = () => {
-    let filtered = logs;
+    let filtered = [...logs]; // Create a copy to avoid mutating original
 
     if (employeeFilter) {
       filtered = filtered.filter((log) => log.emp_name === employeeFilter);
     }
-
-    // ❌ OLD (could crash if entry_time invalid)
-    /*
-    if (dateFilter) {
-      filtered = filtered.filter((log) => {
-        const logDate = new Date(log.entry_time)
-          .toISOString()
-          .split("T")[0];
-        return logDate === dateFilter;
-      });
-    }
-    */
 
     // ✅ NEW (uses numeric timestamp safely)
     if (dateFilter) {
@@ -54,6 +42,31 @@ export default function Dashboard() {
         }
       });
     }
+
+    // Sort by timestamp descending (newest first)
+    filtered.sort((a, b) => {
+      // Handle both numeric timestamps and string timestamps
+      let timeA = 0;
+      let timeB = 0;
+
+      if (typeof a.timestamp === "number") {
+        timeA = a.timestamp;
+      } else if (typeof a.timestamp === "string") {
+        timeA = new Date(a.timestamp).getTime() || 0;
+      } else if (a.entry_time) {
+        timeA = new Date(a.entry_time).getTime() || 0;
+      }
+
+      if (typeof b.timestamp === "number") {
+        timeB = b.timestamp;
+      } else if (typeof b.timestamp === "string") {
+        timeB = new Date(b.timestamp).getTime() || 0;
+      } else if (b.entry_time) {
+        timeB = new Date(b.entry_time).getTime() || 0;
+      }
+
+      return timeB - timeA; // Descending order (newest first)
+    });
 
     setFilteredLogs(filtered);
   };

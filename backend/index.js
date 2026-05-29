@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const { sendSecurityAlert } = require("./emailService");
+const { startFirebaseListener } = require("./firebase-listener");
 
 // Try to load Firebase config, but handle errors gracefully
 let db, realtimeDb;
@@ -186,73 +187,6 @@ app.post("/api/logs", async (req, res) => {
 });
 
 /* =========================================================
-   TEST ENDPOINT
-========================================================= */
-app.post("/api/test-log", async (req, res) => {
-  try {
-    const sampleLogs = [
-      {
-        emp_name: "John Doe",
-        card_id: "CARD001",
-        attempt: "success",
-      },
-      {
-        emp_name: "Jane Smith",
-        card_id: "CARD002",
-        attempt: "failed",
-      },
-      {
-        emp_name: "Alex Johnson",
-        card_id: "CARD003",
-        attempt: "success",
-      },
-    ];
-
-    const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
-
-    const logEntry = {
-      ...randomLog,
-      entry_time: new Date().toISOString(),
-      timestamp: Date.now(),
-    };
-
-    if (realtimeDb) {
-      // ❌ OLD
-      // const logsRef = realtimeDb.ref("access_logs");
-
-      // ✅ NEW
-      const logsRef = realtimeDb.ref("rfid_logs");
-
-      const newLogRef = await logsRef.push(logEntry);
-
-      return res.json({
-        success: true,
-        message: "Test log added successfully",
-        data: {
-          id: newLogRef.key,
-          ...logEntry,
-        },
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Test log added successfully",
-      data: {
-        id: Date.now().toString(),
-        ...logEntry,
-      },
-    });
-  } catch (error) {
-    console.error("Error adding test log:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to add test log: " + error.message,
-    });
-  }
-});
-
-/* =========================================================
    ANALYTICS ENDPOINTS
 ========================================================= */
 app.get("/api/analytics/stats", async (req, res) => {
@@ -335,4 +269,7 @@ app.get("/api/analytics/door-status", async (req, res) => {
 ========================================================= */
 app.listen(5000, () => {
   console.log("Node.js Server running on http://localhost:5000");
+
+  // Start Firebase listener for email notifications
+  startFirebaseListener();
 });
